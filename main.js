@@ -5,23 +5,30 @@ class ParticleSystem extends PIXI.Container {
 		super();
 		// Set start and duration for this effect in milliseconds
 		this.start = 0;
-		// Create a sprite
-		let sp = game.sprite("CoinsGold000");
-		// Set pivot to center of said sprite
-		sp.pivot.x = sp.width / 2;
-		sp.pivot.y = sp.height / 2;
-		// Add the sprite particle to our particle effect
-		this.addChild(sp);
-		// randomize startposition, scale, arc and speed on coin animation
-		sp.baseScale = 0.3 + Math.random() * 0.4;
-		sp.startX = 200 + Math.random() * 400;
-		sp.arcHeight = Math.random() * 400;
-		sp.velocityX = (Math.random() - 0.5) * 400;
-		// higher arc and smaller coin = slower animation
-		this.duration = (800 + sp.arcHeight * 2) * (1.4 - sp.baseScale);
+		this.duration = 1700;
 
-		// Save a reference to the sprite particle
-		this.sp = sp;
+		// Populate array with coins
+		this.coins = [];
+
+		for (let i = 0; i < 40; i++) {
+			// Create a sprite
+			let sp = game.sprite("CoinsGold000");
+			// Set pivot to center of said sprite
+			sp.pivot.x = sp.width / 2;
+			sp.pivot.y = sp.height / 2;
+			// Add the sprite particle to our particle effect
+			this.addChild(sp);
+			// randomize startposition, scale, arc, velocity and offset on coin animation
+			sp.startX = 200 + Math.random() * 400;
+			sp.baseScale = 0.1 + Math.random() * 0.5;
+			sp.arcHeight = Math.random() * 400;
+			sp.velocityX = (Math.random() - 0.5) * 1000;
+			sp.offset = Math.random();
+			// animation speed based on baseScale for parallax effect
+			sp.speedMult = 0.7 + ((sp.baseScale - 0.1) / 0.5) * 0.6;
+			// push coin to array
+			this.coins.push(sp);
+		}
 	}
 	animTick(nt, lt, gt) {
 		// Every update we get three different time variables: nt, lt and gt.
@@ -30,18 +37,25 @@ class ParticleSystem extends PIXI.Container {
 		//   lt: Local time in milliseconds, from 0 to this.duration.
 		//   gt: Global time in milliseconds,
 
-		// Set a new texture on a sprite particle
-		let num = ("000" + Math.floor(nt * 8)).substr(-3);
-		game.setTexture(this.sp, "CoinsGold" + num);
-		//animate position
-		this.sp.y = 225 + Math.sin(nt * Math.PI) * -this.sp.arcHeight + nt * 400;
-		this.sp.x = this.sp.startX + nt * this.sp.velocityX;
-		// animate scale
-		this.sp.scale.x = this.sp.scale.y = this.sp.baseScale;
-		// Animate alpha
-		this.sp.alpha = nt;
-		// Animate rotation
-		this.sp.rotation = nt * Math.PI * 2;
+		for (let i = 0; i < this.coins.length; i++) {
+			let sp = this.coins[i];
+			let coinTime = (nt + sp.offset) % 1;
+			let coinSpeed = Math.min(coinTime * sp.speedMult, 1);
+
+			// Set a new texture on a sprite particle
+			let frame = ("000" + (Math.floor(coinTime * 32) % 8)).substr(-3);
+			game.setTexture(sp, "CoinsGold" + frame);
+			//animate position
+			sp.y =
+				225 + Math.sin(coinSpeed * Math.PI) * -sp.arcHeight + coinSpeed * 400;
+			sp.x = sp.startX + coinSpeed * sp.velocityX;
+			// animate scale
+			sp.scale.x = sp.scale.y = sp.baseScale;
+			// Animate alpha
+			sp.alpha = coinTime < 0.2 ? coinTime * 5 : 1;
+			// Animate rotation
+			sp.rotation = coinSpeed * Math.PI * 2;
+		}
 	}
 }
 
