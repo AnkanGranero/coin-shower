@@ -16,6 +16,7 @@ class ParticleSystem extends PIXI.Container {
     sp.baseScale = 0.3 + Math.random() * 0.4;
     sp.startX = 200 + Math.random() * 400;
     sp.arcHeight = Math.random() * 400;
+	sp.velocityX = (Math.random() - 0.5) * 400;
     // higher arc and smaller coin = slower animation
     this.duration = (800 + sp.arcHeight * 2) * (1.4 - sp.baseScale);
 
@@ -33,8 +34,8 @@ class ParticleSystem extends PIXI.Container {
     let num = ("000" + Math.floor(nt * 8)).substr(-3);
     game.setTexture(this.sp, "CoinsGold" + num);
     //animate position
-    this.sp.x = this.sp.startX;
     this.sp.y = 225 + Math.sin(nt * Math.PI) * -this.sp.arcHeight + nt * 400;
+	this.sp.x = this.sp.startX + nt * this.sp.velocityX;
     // animate scale
     this.sp.scale.x = this.sp.scale.y = this.sp.baseScale;
     // Animate alpha
