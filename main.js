@@ -14,7 +14,7 @@ class ParticleSystem extends PIXI.Container {
 		this.activeCoins = [];
 		this.lastSpawn = 0;
 
-		for (let i = 0; i < 60; i++) {
+		for (let i = 0; i < 40; i++) {
 			let sp = game.sprite("CoinsGold000");
 			sp.pivot.x = sp.width / 2;
 			sp.pivot.y = sp.height / 2;
@@ -49,6 +49,8 @@ class ParticleSystem extends PIXI.Container {
 			if (Math.floor(gt / 1000) > this.lastPulse) {
 				this.lastPulse = Math.floor(gt / 1000);
 				for (let p = 0; p < 10 && this.pool.length > 0; p++) {
+					console.log(this.pool.length);
+						
 					this.spawnCoin(gt);
 				}
 			} else {
