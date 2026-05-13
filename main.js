@@ -1,8 +1,17 @@
 // ----- Start of the assigment ----- //
+const POOL_SIZE = 60;
+const SPAWN_INTERVAL = 50;
+const PULSE_COIN_AMOUNT = 20;
+const BASE_DURATION = 1200;
+const VELOCITY_RANGE = 2000;
+const COIN_SCALE_MIN = 0.08;
+const COIN_SCALE_MAX = 0.4;
+const FADE_IN = 0.15;
 
 class ParticleSystem extends PIXI.Container {
 	constructor() {
 		super();
+
 		// Set start and duration for this effect in milliseconds
 		this.start = 0;
 		this.duration = 999999;
@@ -14,7 +23,7 @@ class ParticleSystem extends PIXI.Container {
 		this.lastSpawn = 0;
 
 		// Populate pool with inactive coins
-		for (let i = 0; i < 40; i++) {
+		for (let i = 0; i < POOL_SIZE; i++) {
 			let sp = game.sprite("CoinsGold000");
 			sp.pivot.x = sp.width / 2;
 			sp.pivot.y = sp.height / 2;
@@ -27,13 +36,15 @@ class ParticleSystem extends PIXI.Container {
 		let sp = this.pool.pop();
 		sp.visible = true;
 		// randomize startposition, size, arc height, horizontal velocity
-		sp.startX = 300 + Math.random() * 200;
-		sp.baseScale = 0.1 + Math.random() * 0.5;
+		sp.startX = 350 + Math.random() * 100;
+		sp.baseScale =
+			COIN_SCALE_MIN + Math.random() * (COIN_SCALE_MAX - COIN_SCALE_MIN);
 		sp.arcHeight = Math.random() * 400;
-		sp.velocityX = (Math.random() - 0.5) * 1000;
+		sp.velocityX = (Math.random() - 0.5) * VELOCITY_RANGE;
 
 		sp.spawnTime = gt;
-		sp.duration = (800 + sp.arcHeight * 2) * (1.4 - sp.baseScale);
+		// larger coins moves faster than smaller to give parallax feel, 1.4 must be > COIN_SCALE_MAX, otherwise duration becomes negative
+		sp.duration = (BASE_DURATION + sp.arcHeight * 2) * (1.4 - sp.baseScale);
 		this.activeCoins.push(sp);
 	}
 	animTick(nt, lt, gt) {
@@ -44,11 +55,11 @@ class ParticleSystem extends PIXI.Container {
 		//   gt: Global time in milliseconds,
 
 		//spawn new coin if enough time has passed
-		if (gt - this.lastSpawn > 100 && this.pool.length > 0) {
+		if (gt - this.lastSpawn > SPAWN_INTERVAL && this.pool.length > 0) {
 			// add extra burst of spawning coins every second
 			if (Math.floor(gt / 1000) > this.lastPulse) {
 				this.lastPulse = Math.floor(gt / 1000);
-				for (let p = 0; p < 10 && this.pool.length > 0; p++) {
+				for (let p = 0; p < PULSE_COIN_AMOUNT && this.pool.length > 0; p++) {
 					this.spawnCoin(gt);
 				}
 			} else {
@@ -79,7 +90,7 @@ class ParticleSystem extends PIXI.Container {
 			// animate scale
 			sp.scale.x = sp.scale.y = sp.baseScale;
 			// Animate alpha
-			sp.alpha = t < 0.2 ? t * 5 : 1;
+			sp.alpha = t < FADE_IN ? t * (1 / FADE_IN) : 1;
 			// Animate rotation
 			sp.rotation = t * Math.PI * 2;
 		}
