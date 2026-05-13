@@ -9,11 +9,11 @@ class ParticleSystem extends PIXI.Container {
 		// used for spawning more coins at the pulse
 		this.lastPulse = 0;
 
-		// Populate array with coins
 		this.pool = [];
 		this.activeCoins = [];
 		this.lastSpawn = 0;
 
+		// Populate pool with inactive coins
 		for (let i = 0; i < 40; i++) {
 			let sp = game.sprite("CoinsGold000");
 			sp.pivot.x = sp.width / 2;
@@ -31,9 +31,8 @@ class ParticleSystem extends PIXI.Container {
 		sp.baseScale = 0.1 + Math.random() * 0.5;
 		sp.arcHeight = Math.random() * 400;
 		sp.velocityX = (Math.random() - 0.5) * 1000;
-		// time of spawning
+
 		sp.spawnTime = gt;
-		// length of animation
 		sp.duration = (800 + sp.arcHeight * 2) * (1.4 - sp.baseScale);
 		this.activeCoins.push(sp);
 	}
@@ -46,11 +45,10 @@ class ParticleSystem extends PIXI.Container {
 
 		//spawn new coin if enough time has passed
 		if (gt - this.lastSpawn > 100 && this.pool.length > 0) {
+			// add extra burst of spawning coins every second
 			if (Math.floor(gt / 1000) > this.lastPulse) {
 				this.lastPulse = Math.floor(gt / 1000);
 				for (let p = 0; p < 10 && this.pool.length > 0; p++) {
-					console.log(this.pool.length);
-						
 					this.spawnCoin(gt);
 				}
 			} else {
