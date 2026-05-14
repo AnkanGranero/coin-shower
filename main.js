@@ -64,9 +64,9 @@ class ParticleSystem extends PIXI.Container {
 			nt < SPAWN_END
 		) {
 			// add extra burst of spawning coins every second
-			if (Math.floor(nt * 10) > this.lastPulse) {
-				this.lastPulse = Math.floor(nt * 10);
-				for (let p = 0; p < PULSE_COIN_AMOUNT && this.pool.length > 0; p++) {
+			if (lt - this.lastPulse >= 1000) {
+				this.lastPulse = lt;
+				for (let i = 0; i < PULSE_COIN_AMOUNT && this.pool.length > 0; i++) {
 					this.spawnCoin(nt);
 				}
 			} else {
@@ -78,9 +78,10 @@ class ParticleSystem extends PIXI.Container {
 		for (let i = this.activeCoins.length - 1; i >= 0; i--) {
 			let sp = this.activeCoins[i];
 			let age = nt - sp.spawnNt;
-			let t = age / sp.duration;
+			// 0 = new spawn , 1 = finished
+			let lifeProgress = age / sp.duration;
 
-			if (t >= 1) {
+			if (lifeProgress >= 1) {
 				//return to pool
 				sp.visible = false;
 				this.pool.push(sp);
@@ -88,18 +89,22 @@ class ParticleSystem extends PIXI.Container {
 				continue;
 			}
 
-			// Set a new texture on a sprite particle
-			let frame = ("000" + (Math.floor(t * 32) % 8)).substr(-3);
+			// cycle through sprite frames based on lifeProgress
+			let frameIndex = Math.floor(lifeProgress * 32) % 8;
+			let frame = ("000" + frameIndex).substr(-3);
 			game.setTexture(sp, "CoinsGold" + frame);
 			//animate position
-			sp.y = 225 + Math.sin(t * Math.PI) * -sp.arcHeight + t * 400;
-			sp.x = sp.startX + t * sp.velocityX;
-			// animate scale
-			sp.scale.x = sp.scale.y = sp.baseScale;
+			sp.y =
+				225 +
+				Math.sin(lifeProgress * Math.PI) * -sp.arcHeight +
+				lifeProgress * 400;
+			sp.x = sp.startX + lifeProgress * sp.velocityX;
+			// animate scale, starts at 1 times basescale and ends at 1.2 times baseScale to create illusion of coins coming at us
+			sp.scale.x = sp.scale.y = sp.baseScale * (1 + lifeProgress * 0.2);
 			// Animate alpha
-			sp.alpha = t < FADE_IN ? t * (1 / FADE_IN) : 1;
+			sp.alpha = lifeProgress < FADE_IN ? lifeProgress * (1 / FADE_IN) : 1;
 			// Animate rotation
-			sp.rotation = t * Math.PI * 2;
+			sp.rotation = lifeProgress * Math.PI * 2;
 		}
 	}
 }
