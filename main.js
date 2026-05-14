@@ -1,12 +1,13 @@
 // ----- Start of the assigment ----- //
 const POOL_SIZE = 60;
-const SPAWN_INTERVAL = 50;
+const SPAWN_INTERVAL = 0.005;
 const PULSE_COIN_AMOUNT = 20;
 const BASE_DURATION = 1200;
 const VELOCITY_RANGE = 2000;
 const COIN_SCALE_MIN = 0.08;
 const COIN_SCALE_MAX = 0.4;
 const FADE_IN = 0.15;
+SPAWN_END = 0.7;
 
 class ParticleSystem extends PIXI.Container {
 	constructor() {
@@ -14,7 +15,7 @@ class ParticleSystem extends PIXI.Container {
 
 		// Set start and duration for this effect in milliseconds
 		this.start = 0;
-		this.duration = 999999;
+		this.duration = 10000;
 		// used for spawning more coins at the pulse
 		this.lastPulse = 0;
 
@@ -32,7 +33,7 @@ class ParticleSystem extends PIXI.Container {
 			this.pool.push(sp);
 		}
 	}
-	spawnCoin(gt) {
+	spawnCoin(nt) {
 		let sp = this.pool.pop();
 		sp.visible = true;
 		// randomize startposition, size, arc height, horizontal velocity
@@ -42,9 +43,11 @@ class ParticleSystem extends PIXI.Container {
 		sp.arcHeight = Math.random() * 400;
 		sp.velocityX = (Math.random() - 0.5) * VELOCITY_RANGE;
 
-		sp.spawnTime = gt;
+		sp.spawnNt = nt;
 		// larger coins moves faster than smaller to give parallax feel, 1.4 must be > COIN_SCALE_MAX, otherwise duration becomes negative
-		sp.duration = (BASE_DURATION + sp.arcHeight * 2) * (1.4 - sp.baseScale);
+		sp.duration =
+			((BASE_DURATION + sp.arcHeight * 2) * (1.4 - sp.baseScale)) /
+			this.duration;
 		this.activeCoins.push(sp);
 	}
 	animTick(nt, lt, gt) {
@@ -55,22 +58,26 @@ class ParticleSystem extends PIXI.Container {
 		//   gt: Global time in milliseconds,
 
 		//spawn new coin if enough time has passed
-		if (gt - this.lastSpawn > SPAWN_INTERVAL && this.pool.length > 0) {
+		if (
+			nt - this.lastSpawn > SPAWN_INTERVAL &&
+			this.pool.length > 0 &&
+			nt < SPAWN_END
+		) {
 			// add extra burst of spawning coins every second
-			if (Math.floor(gt / 1000) > this.lastPulse) {
-				this.lastPulse = Math.floor(gt / 1000);
+			if (Math.floor(nt * 10) > this.lastPulse) {
+				this.lastPulse = Math.floor(nt * 10);
 				for (let p = 0; p < PULSE_COIN_AMOUNT && this.pool.length > 0; p++) {
-					this.spawnCoin(gt);
+					this.spawnCoin(nt);
 				}
 			} else {
-				this.spawnCoin(gt);
+				this.spawnCoin(nt);
 			}
-			this.lastSpawn = gt;
+			this.lastSpawn = nt;
 		}
 
 		for (let i = this.activeCoins.length - 1; i >= 0; i--) {
 			let sp = this.activeCoins[i];
-			let age = gt - sp.spawnTime;
+			let age = nt - sp.spawnNt;
 			let t = age / sp.duration;
 
 			if (t >= 1) {
