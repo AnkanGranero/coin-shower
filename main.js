@@ -3,11 +3,12 @@ const POOL_SIZE = 60;
 const SPAWN_INTERVAL = 0.005;
 const PULSE_COIN_AMOUNT = 20;
 const BASE_DURATION = 1200;
-const VELOCITY_RANGE = 2000;
+let VELOCITY_RANGE = 2000;
 const COIN_SCALE_MIN = 0.08;
-const COIN_SCALE_MAX = 0.4;
+let COIN_SCALE_MAX = 0.4;
+let SCALE_GROWTH = 0.2;
 const FADE_IN = 0.15;
-SPAWN_END = 0.7;
+const SPAWN_END = 0.7;
 
 class ParticleSystem extends PIXI.Container {
 	constructor() {
@@ -99,8 +100,9 @@ class ParticleSystem extends PIXI.Container {
 				Math.sin(lifeProgress * Math.PI) * -sp.arcHeight +
 				lifeProgress * 400;
 			sp.x = sp.startX + lifeProgress * sp.velocityX;
-			// animate scale, starts at 1 times basescale and ends at 1.2 times baseScale to create illusion of coins coming at us
-			sp.scale.x = sp.scale.y = sp.baseScale * (1 + lifeProgress * 0.2);
+			// animate scale up to 1+SCALE_GROWTH times baseScale to create illusion of coins coming at us
+			sp.scale.x = sp.scale.y =
+				sp.baseScale * (1 + lifeProgress * SCALE_GROWTH);
 			// Animate alpha
 			sp.alpha = lifeProgress < FADE_IN ? lifeProgress * (1 / FADE_IN) : 1;
 			// Animate rotation
@@ -216,8 +218,15 @@ window.onload = function () {
 			game.addEffect(new ParticleSystem());
 		},
 	});
-	let playButton = document.querySelector(".play-btn");
-	let winButton = document.querySelector(".win-btn");
+	let playButton = document.getElementById("play-btn");
+	let winButton = document.getElementById("win-btn");
+	let spreadSlider = document.getElementById("spread-slider");
+	spreadSlider.value = VELOCITY_RANGE;
+	let towardsScreenSlider = document.getElementById("towards-screen-slider");
+	towardsScreenSlider.value = SCALE_GROWTH;
+	let coinScaleMaxSlider = document.getElementById("coin-scale-max-slider");
+	coinScaleMaxSlider.value = COIN_SCALE_MAX;
+
 	playButton.addEventListener("click", function () {
 		if (game.isRunning) {
 			game.pause();
@@ -229,5 +238,14 @@ window.onload = function () {
 	});
 	winButton.addEventListener("click", function () {
 		game.start();
+	});
+	spreadSlider.addEventListener("input", function () {
+		VELOCITY_RANGE = this.value;
+	});
+	towardsScreenSlider.addEventListener("input", function () {
+		SCALE_GROWTH = this.value;
+	});
+	coinScaleMaxSlider.addEventListener("input", function () {
+		COIN_SCALE_MAX = this.value;
 	});
 };
