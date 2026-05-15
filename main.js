@@ -107,6 +107,16 @@ class ParticleSystem extends PIXI.Container {
 			sp.rotation = lifeProgress * Math.PI * 2;
 		}
 	}
+	reset() {
+		for (let i = this.activeCoins.length - 1; i >= 0; i--) {
+			let sp = this.activeCoins[i];
+			sp.visible = false;
+			this.pool.push(sp);
+		}
+		this.activeCoins = [];
+		this.lastSpawn = 0;
+		this.lastPulse = 0;
+	}
 }
 
 // ----- End of the assigment ----- //
@@ -116,7 +126,7 @@ class Game {
 		this.totalDuration = 0;
 		this.effects = [];
 		this.renderer = new PIXI.WebGLRenderer(800, 450);
-		document.body.appendChild(this.renderer.view);
+		document.getElementById("canvas-container").appendChild(this.renderer.view);
 		this.stage = new PIXI.Container();
 		this.loadAssets(props && props.onload);
 	}
@@ -145,17 +155,30 @@ class Game {
 			}.bind(this),
 		);
 	}
+	loop() {
+		if (!this.isRunning) return;
+		this.tick();
+		this.render();
+		requestAnimationFrame(this.loop.bind(this));
+	}
+	pause() {
+		this.isRunning = false;
+		this.pausedAt = Date.now();
+	}
+	resume() {
+		this.t0 += Date.now() - this.pausedAt;
+		this.isRunning = true;
+		this.loop();
+	}
 	start() {
+		for (let i = 0; i < this.effects.length; i++) {
+			if (this.effects[i].reset) this.effects[i].reset();
+		}
 		this.isRunning = true;
 		this.t0 = Date.now();
-		update.bind(this)();
-		function update() {
-			if (!this.isRunning) return;
-			this.tick();
-			this.render();
-			requestAnimationFrame(update.bind(this));
-		}
+		this.loop();
 	}
+
 	addEffect(eff) {
 		this.totalDuration = Math.max(
 			this.totalDuration,
@@ -192,5 +215,19 @@ window.onload = function () {
 		onload: function () {
 			game.addEffect(new ParticleSystem());
 		},
+	});
+	let playButton = document.querySelector(".play-btn");
+	let winButton = document.querySelector(".win-btn");
+	playButton.addEventListener("click", function () {
+		if (game.isRunning) {
+			game.pause();
+			playButton.textContent = "Play";
+		} else {
+			game.resume();
+			playButton.textContent = "Pause";
+		}
+	});
+	winButton.addEventListener("click", function () {
+		game.start();
 	});
 };
