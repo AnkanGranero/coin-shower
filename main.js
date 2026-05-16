@@ -5,7 +5,7 @@ const PULSE_COIN_AMOUNT = 20;
 const BASE_DURATION = 1200;
 let VELOCITY_RANGE = 2000;
 const COIN_SCALE_MIN = 0.08;
-let COIN_SCALE_MAX = 0.4;
+let DEPTH = 0.32;
 let SCALE_GROWTH = 0.2;
 const FADE_IN = 0.15;
 const SPAWN_END = 0.7;
@@ -39,16 +39,21 @@ class ParticleSystem extends PIXI.Container {
 		sp.visible = true;
 		// randomize startposition, size, arc height, horizontal velocity
 		sp.startX = 350 + Math.random() * 100;
-		sp.baseScale =
-			COIN_SCALE_MIN + Math.random() * (COIN_SCALE_MAX - COIN_SCALE_MIN);
+		sp.baseScale = COIN_SCALE_MIN + Math.random() * DEPTH;
 		sp.arcHeight = Math.random() * 400;
 		sp.velocityX = (Math.random() - 0.5) * VELOCITY_RANGE;
 
 		sp.spawnNt = nt;
-		// larger coins moves faster than smaller to give parallax feel, 1.4 must be > COIN_SCALE_MAX, otherwise duration becomes negative
+		// larger coins moves faster than smaller to give parallax feel, 1.4 must be > COIN_SCALE_MIN + DEPTH, otherwise duration becomes negative
 		sp.duration =
 			((BASE_DURATION + sp.arcHeight * 2) * (1.4 - sp.baseScale)) /
 			this.duration;
+		//sort array by scale so that larger coins render in front of smaller ones
+		let insertIndex = 0;
+		for (let i = 0; i < this.activeCoins.length; i++) {
+			if (this.activeCoins[i].baseScale < sp.baseScale) insertIndex++;
+		}
+		this.setChildIndex(sp, insertIndex);
 		this.activeCoins.push(sp);
 	}
 	animTick(nt, lt, gt) {
@@ -103,6 +108,7 @@ class ParticleSystem extends PIXI.Container {
 			// animate scale up to 1+SCALE_GROWTH times baseScale to create illusion of coins coming at us
 			sp.scale.x = sp.scale.y =
 				sp.baseScale * (1 + lifeProgress * SCALE_GROWTH);
+
 			// Animate alpha
 			sp.alpha = lifeProgress < FADE_IN ? lifeProgress * (1 / FADE_IN) : 1;
 			// Animate rotation
@@ -224,8 +230,8 @@ window.onload = function () {
 	spreadSlider.value = VELOCITY_RANGE;
 	let towardsScreenSlider = document.getElementById("towards-screen-slider");
 	towardsScreenSlider.value = SCALE_GROWTH;
-	let coinScaleMaxSlider = document.getElementById("coin-scale-max-slider");
-	coinScaleMaxSlider.value = COIN_SCALE_MAX;
+	let depthSlider = document.getElementById("depth-slider");
+	depthSlider.value = DEPTH;
 
 	playButton.addEventListener("click", function () {
 		if (game.isRunning) {
@@ -245,7 +251,7 @@ window.onload = function () {
 	towardsScreenSlider.addEventListener("input", function () {
 		SCALE_GROWTH = this.value;
 	});
-	coinScaleMaxSlider.addEventListener("input", function () {
-		COIN_SCALE_MAX = this.value;
+	depthSlider.addEventListener("input", function () {
+		DEPTH = this.value;
 	});
 };
