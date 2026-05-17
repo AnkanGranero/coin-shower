@@ -1,7 +1,9 @@
 // ----- Start of the assigment ----- //
 const POOL_SIZE = 60;
+// minimum nt gap between coin spawns
 const SPAWN_INTERVAL = 0.005;
 const PULSE_COIN_AMOUNT = 20;
+// base lifetime of coin in ms before arc and scale adjustments
 const BASE_DURATION = 1200;
 const VELOCITY_RANGE = 2000;
 const COIN_SCALE_MIN = 0.08;
@@ -96,7 +98,7 @@ class ParticleSystem extends PIXI.Container {
 			}
 
 			// cycle through sprite frames based on lifeProgress
-			let frameIndex = Math.floor(lifeProgress * 32) % 8;
+			let frameIndex = Math.floor(lifeProgress * 36) % 9;
 			let frame = ("000" + frameIndex).substr(-3);
 			game.setTexture(sp, "CoinsGold" + frame);
 			//animate position
