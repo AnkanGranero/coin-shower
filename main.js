@@ -1,7 +1,7 @@
 // ----- Start of the assigment ----- //
 const POOL_SIZE = 60;
 const SPAWN_INTERVAL = 50; // minimum ms gap between coin spawns
-const PULSE_INTERVAL = 1000 // time between spawning a burst of coins
+const PULSE_INTERVAL = 1000; // time between spawning a burst of coins
 const PULSE_COIN_AMOUNT = 20;
 const BASE_DURATION = 1200; // base lifetime in ms before arc and scale adjustments
 const VELOCITY_RANGE = 2000;
@@ -10,7 +10,7 @@ const DEPTH = 0.32;
 const COIN_SCALE_MAX = COIN_SCALE_MIN + DEPTH;
 const SCALE_GROWTH = 0.2;
 const FADE_IN = 0.15; // first 15% of coin lifetime
-const SPAWN_END = 7000; // stop spawning after 7 seconds
+const SPAWN_END = 0.7; // stop spawning after 70% of duration
 
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 450;
@@ -38,7 +38,7 @@ class ParticleSystem extends PIXI.Container {
 			this.pool.push(sp);
 		}
 	}
-	spawnCoin(lt) {
+	spawnCoin(nt) {
 		let sp = this.pool.pop();
 		sp.visible = true;
 
@@ -49,10 +49,12 @@ class ParticleSystem extends PIXI.Container {
 		sp.arcHeight = Math.random() * 400;
 		sp.velocityX = (Math.random() - 0.5) * VELOCITY_RANGE;
 
-		sp.spawnLt = lt;
+		sp.spawnNt = nt;
 		// larger coins moves faster than smaller to give parallax feel
 		sp.duration =
-			(BASE_DURATION + sp.arcHeight * 2) * (COIN_SCALE_MAX + 1 - sp.baseScale);
+			((BASE_DURATION + sp.arcHeight * 2) *
+				(COIN_SCALE_MAX + 1 - sp.baseScale)) /
+			this.duration;
 		//sort array by scale so that larger coins render in front of smaller ones
 		let insertIndex = 0;
 		for (let i = 0; i < this.activeCoins.length; i++) {
@@ -72,23 +74,23 @@ class ParticleSystem extends PIXI.Container {
 		if (
 			lt - this.lastSpawn > SPAWN_INTERVAL &&
 			this.pool.length > 0 &&
-			lt < SPAWN_END
+			nt < SPAWN_END
 		) {
 			// add extra burst of spawning coins every second
 			if (lt - this.lastPulse >= PULSE_INTERVAL) {
 				this.lastPulse = lt;
 				for (let i = 0; i < PULSE_COIN_AMOUNT && this.pool.length > 0; i++) {
-					this.spawnCoin(lt);
+					this.spawnCoin(nt);
 				}
 			} else {
-				this.spawnCoin(lt);
+				this.spawnCoin(nt);
 			}
 			this.lastSpawn = lt;
 		}
 
 		for (let i = this.activeCoins.length - 1; i >= 0; i--) {
 			let sp = this.activeCoins[i];
-			let age = lt - sp.spawnLt;
+			let age = nt - sp.spawnNt;
 			let lifeProgress = age / sp.duration; // 0 = new spawn, 1 = finished
 
 			if (lifeProgress >= 1) {
