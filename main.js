@@ -1,16 +1,19 @@
 // ----- Start of the assigment ----- //
 const POOL_SIZE = 60;
-// minimum nt gap between coin spawns
-const SPAWN_INTERVAL = 0.005;
+const SPAWN_INTERVAL = 50; // minimum ms gap between coin spawns
+const PULSE_INTERVAL = 1000 // time between spawning a burst of coins
 const PULSE_COIN_AMOUNT = 20;
-// base lifetime of coin in ms before arc and scale adjustments
-const BASE_DURATION = 1200;
+const BASE_DURATION = 1200; // base lifetime in ms before arc and scale adjustments
 const VELOCITY_RANGE = 2000;
 const COIN_SCALE_MIN = 0.08;
 const DEPTH = 0.32;
+const COIN_SCALE_MAX = COIN_SCALE_MIN + DEPTH;
 const SCALE_GROWTH = 0.2;
-const FADE_IN = 0.15;
-const SPAWN_END = 0.7;
+const FADE_IN = 0.15; // first 15% of coin lifetime
+const SPAWN_END = 7000; // stop spawning after 7 seconds
+
+const CANVAS_WIDTH = 800;
+const CANVAS_HEIGHT = 450;
 
 class ParticleSystem extends PIXI.Container {
 	constructor() {
@@ -19,8 +22,7 @@ class ParticleSystem extends PIXI.Container {
 		// Set start and duration for this effect in milliseconds
 		this.start = 0;
 		this.duration = 10000;
-		// used for spawning more coins at the pulse
-		this.lastPulse = 0;
+		this.lastPulse = 0; // used for pulse burst spawning
 
 		this.pool = [];
 		this.activeCoins = [];
@@ -36,20 +38,21 @@ class ParticleSystem extends PIXI.Container {
 			this.pool.push(sp);
 		}
 	}
-	spawnCoin(nt) {
+	spawnCoin(lt) {
 		let sp = this.pool.pop();
 		sp.visible = true;
+
 		// randomize startposition, size, arc height, horizontal velocity
-		sp.startX = 350 + Math.random() * 100;
+		const canvasMiddle = CANVAS_WIDTH / 2;
+		sp.startX = canvasMiddle + (Math.random() - 0.5) * 100; // ±50px around center
 		sp.baseScale = COIN_SCALE_MIN + Math.random() * DEPTH;
 		sp.arcHeight = Math.random() * 400;
 		sp.velocityX = (Math.random() - 0.5) * VELOCITY_RANGE;
 
-		sp.spawnNt = nt;
-		// larger coins moves faster than smaller to give parallax feel, 1.4 must be > COIN_SCALE_MIN + DEPTH, otherwise duration becomes negative
+		sp.spawnLt = lt;
+		// larger coins moves faster than smaller to give parallax feel
 		sp.duration =
-			((BASE_DURATION + sp.arcHeight * 2) * (1.4 - sp.baseScale)) /
-			this.duration;
+			(BASE_DURATION + sp.arcHeight * 2) * (COIN_SCALE_MAX + 1 - sp.baseScale);
 		//sort array by scale so that larger coins render in front of smaller ones
 		let insertIndex = 0;
 		for (let i = 0; i < this.activeCoins.length; i++) {
@@ -67,27 +70,26 @@ class ParticleSystem extends PIXI.Container {
 
 		//spawn new coin if enough time has passed
 		if (
-			nt - this.lastSpawn > SPAWN_INTERVAL &&
+			lt - this.lastSpawn > SPAWN_INTERVAL &&
 			this.pool.length > 0 &&
-			nt < SPAWN_END
+			lt < SPAWN_END
 		) {
 			// add extra burst of spawning coins every second
-			if (lt - this.lastPulse >= 1000) {
+			if (lt - this.lastPulse >= PULSE_INTERVAL) {
 				this.lastPulse = lt;
 				for (let i = 0; i < PULSE_COIN_AMOUNT && this.pool.length > 0; i++) {
-					this.spawnCoin(nt);
+					this.spawnCoin(lt);
 				}
 			} else {
-				this.spawnCoin(nt);
+				this.spawnCoin(lt);
 			}
-			this.lastSpawn = nt;
+			this.lastSpawn = lt;
 		}
 
 		for (let i = this.activeCoins.length - 1; i >= 0; i--) {
 			let sp = this.activeCoins[i];
-			let age = nt - sp.spawnNt;
-			// 0 = new spawn , 1 = finished
-			let lifeProgress = age / sp.duration;
+			let age = lt - sp.spawnLt;
+			let lifeProgress = age / sp.duration; // 0 = new spawn, 1 = finished
 
 			if (lifeProgress >= 1) {
 				//return to pool
@@ -98,7 +100,7 @@ class ParticleSystem extends PIXI.Container {
 			}
 
 			// cycle through sprite frames based on lifeProgress
-			let frameIndex = Math.floor(lifeProgress * 36) % 9;
+			let frameIndex = Math.floor(lifeProgress * 36) % 9; // 4 loops through 9 frames
 			let frame = ("000" + frameIndex).substr(-3);
 			game.setTexture(sp, "CoinsGold" + frame);
 			//animate position
@@ -111,7 +113,7 @@ class ParticleSystem extends PIXI.Container {
 			sp.scale.x = sp.scale.y =
 				sp.baseScale * (1 + lifeProgress * SCALE_GROWTH);
 			// Animate alpha
-			sp.alpha = lifeProgress < FADE_IN ? lifeProgress * (1 / FADE_IN) : 1;
+			sp.alpha = lifeProgress < FADE_IN ? lifeProgress / FADE_IN : 1;
 			// Animate rotation
 			sp.rotation = lifeProgress * Math.PI * 2;
 		}
@@ -124,7 +126,7 @@ class Game {
 	constructor(props) {
 		this.totalDuration = 0;
 		this.effects = [];
-		this.renderer = new PIXI.WebGLRenderer(800, 450);
+		this.renderer = new PIXI.WebGLRenderer(CANVAS_WIDTH, CANVAS_HEIGHT);
 		document.body.appendChild(this.renderer.view);
 		this.stage = new PIXI.Container();
 		this.loadAssets(props && props.onload);
